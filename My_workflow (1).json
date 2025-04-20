@@ -1,0 +1,901 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "functionCode": "let combined = items.map(item => $json.content).join(\"\\n\\n\");\n\nlet question =  $node[\"Switch1\"].json.data.message.text;\n\nreturn [{ json: { text: combined, question: question } }];\n"
+      },
+      "id": "1800cc45-f391-4f61-97a5-720dd426e4ed",
+      "name": "Combine Text",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        3400,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "scraped_data",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "url",
+              "keyValue": "={{ $json.url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3020,
+        440
+      ],
+      "id": "d58974f9-6521-4411-be84-3060fcb30d3e",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=use this data to answer the question {{ $json.question }}\nData:{{ $json.text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        3620,
+        440
+      ],
+      "id": "91df2514-cfba-4c79-9b0b-98db66aaf2e4",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3580,
+        620
+      ],
+      "id": "5aac0c8d-2b03-4f7c-ba83-76f24d77f135",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NKUHeFxB3lOemloY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "9ebda67f-3a16-4255-a213-364d28bbfa8d",
+      "name": "Telegram trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        380
+      ],
+      "webhookId": "64456f84-9a61-4ccc-a28c-3aca7a498103",
+      "credentials": {
+        "telegramApi": {
+          "id": "CTJhsMo57KtdFGf1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.data.message.from.id }}",
+        "text": "Please send the link you want to ask questions from.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2960,
+        60
+      ],
+      "id": "9b184880-e399-4047-9fa3-be35fde2cb42",
+      "name": "Telegram",
+      "webhookId": "e573abc7-645f-4ef0-84b6-28a28e8bc98f",
+      "credentials": {
+        "telegramApi": {
+          "id": "CTJhsMo57KtdFGf1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Switch1').item.json.data.message.text }}",
+        "responseFormat": "string",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        240
+      ],
+      "id": "ba909711-7854-4d50-9868-d3e0f38c4e9b"
+    },
+    {
+      "parameters": {
+        "tableId": "scraped_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $('Switch1').item.json.data.message.text }}"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "name": "Supabase Insert",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3740,
+        120
+      ],
+      "id": "bf0860fd-6d26-49e5-bd2f-633245db33f7",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.data.message.chat.id }}",
+        "text": "End the question in a question mark",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2940,
+        820
+      ],
+      "id": "91416595-05cb-4513-b173-06b27af82836",
+      "name": "Telegram1",
+      "webhookId": "f74aa258-bd28-43e7-ab19-74b1d4246425",
+      "credentials": {
+        "telegramApi": {
+          "id": "CTJhsMo57KtdFGf1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "user_data",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.data.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        440
+      ],
+      "id": "31235c3f-5b33-423d-8679-f1254ddc6566",
+      "name": "Supabase1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "user_data",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $json.data.message.from.id }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $json.data.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        240
+      ],
+      "id": "ad4e5589-3010-480f-8fcf-b39d84168507",
+      "name": "Supabase2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram trigger').item.json.message.chat.id }}",
+        "text": "Now you may ask questions from the website",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3960,
+        120
+      ],
+      "id": "c6800606-8e0a-4867-8706-96725e9b5fa5",
+      "name": "Telegram2",
+      "webhookId": "e573abc7-645f-4ef0-84b6-28a28e8bc98f",
+      "credentials": {
+        "telegramApi": {
+          "id": "CTJhsMo57KtdFGf1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node['Switch1'].json.data.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4020,
+        440
+      ],
+      "id": "05221020-c214-4361-a42b-c2490960e386",
+      "name": "Telegram3",
+      "webhookId": "e573abc7-645f-4ef0-84b6-28a28e8bc98f",
+      "credentials": {
+        "telegramApi": {
+          "id": "CTJhsMo57KtdFGf1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cf194571-eadd-412b-8a28-284bb70f6e3d"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "945cf32f-49b4-4ef1-88d2-ab810b1db525",
+                    "leftValue": "={{ $json.data.message.text }}",
+                    "rightValue": "https",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "42370c42-8ac3-4cb5-84b0-388b849d543a",
+                    "leftValue": "={{ $json.data.message.text }}",
+                    "rightValue": "?",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2060,
+        360
+      ],
+      "id": "35a270fa-1f4b-4e37-aca9-17bec83f3358",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "user_data",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.result.chat.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3160,
+        60
+      ],
+      "id": "010da247-d44b-4b6e-b49b-04f8c47e47cc",
+      "name": "Supabase3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=extract all the content from this\n {{ $json.data }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        3440,
+        120
+      ],
+      "id": "51f24a4c-aec3-4236-9f7b-61c87eb87ffc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3440,
+        300
+      ],
+      "id": "218d3fee-8ade-4b0d-b0b4-736675e4a832",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NKUHeFxB3lOemloY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    node: \"Telegram trigger\",\n    data: $input.item.json,\n    error: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        380
+      ],
+      "id": "261d1c4f-4b10-424a-b8b8-2cdff1a70414",
+      "name": "Log Telegram Input"
+    },
+    {
+      "parameters": {
+        "tableId": "logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        380
+      ],
+      "id": "4797611c-1dd2-473e-aff1-381566962651",
+      "name": "Log Input",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    node: \"Started\",\n    data: $input.item.json,\n    error: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        -60
+      ],
+      "id": "234691c0-9189-43a3-8a2d-ba368148b462",
+      "name": "Log Telegram Input1"
+    },
+    {
+      "parameters": {
+        "tableId": "logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3660,
+        -60
+      ],
+      "id": "79f6e669-b31f-4e03-b262-0d5b2b4954aa",
+      "name": "Log Input1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    node: \"Data extracted\",\n    data: $input.item.json,\n    error: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4200,
+        120
+      ],
+      "id": "b86b421c-18ba-4285-8688-83ba26170a8e",
+      "name": "Log Telegram Input2"
+    },
+    {
+      "parameters": {
+        "tableId": "logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4420,
+        120
+      ],
+      "id": "6ce599c7-f98a-4c56-a420-0cd79b954776",
+      "name": "Log Input2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    node: \"Question answered\",\n    data: $input.item.json,\n    error: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4280,
+        440
+      ],
+      "id": "b60e3a9d-0227-4368-9d61-2e0a645e3dca",
+      "name": "Log Telegram Input3"
+    },
+    {
+      "parameters": {
+        "tableId": "logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4500,
+        440
+      ],
+      "id": "3b0b3fc0-e773-4820-b17f-a9d3d5118a42",
+      "name": "Log Input3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    node: \"Reminder of Question Mark\",\n    data: $input.item.json,\n    error: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        840
+      ],
+      "id": "e0fc506e-07bf-4e51-8c49-a5f43c4e6829",
+      "name": "Log Telegram Input4"
+    },
+    {
+      "parameters": {
+        "tableId": "logs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3500,
+        840
+      ],
+      "id": "d4bd9ee3-82ee-41ca-9f81-1f34ba7bf549",
+      "name": "Log Input4",
+      "credentials": {
+        "supabaseApi": {
+          "id": "RzCpExzGBoHzEiKu",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Combine Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Combine Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram trigger": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Supabase3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Insert": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Telegram3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Supabase Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Telegram Input": {
+      "main": [
+        [
+          {
+            "node": "Log Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Input": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Telegram Input1": {
+      "main": [
+        [
+          {
+            "node": "Log Input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Telegram Input2": {
+      "main": [
+        [
+          {
+            "node": "Log Input2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Telegram Input3": {
+      "main": [
+        [
+          {
+            "node": "Log Input3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Telegram Input4": {
+      "main": [
+        [
+          {
+            "node": "Log Input4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase3": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram2": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Input2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram3": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Input3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "Log Telegram Input4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6a797065-de7e-4131-a741-99422d444467",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0647cf564485cdbd6873d361f4dc46edf1e3b84b3cbee034e4be9c31543d6b4b"
+  },
+  "id": "G8qiaSFVMW6G37FR",
+  "tags": []
+}
